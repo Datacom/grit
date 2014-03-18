@@ -714,12 +714,50 @@ module Grit
       end
     end
 
+    def grep(searchtext, contextlines = 3, branch = 'master')
+      context_arg = '-C ' + contextlines.to_s
+      result = git.native(:grep, {}, '-n', '-E', '-i', '-z', '--heading', '--break', context_arg, searchtext, branch).encode('UTF-8', invalid: :replace, undef: :replace, replace: '')
+      greps = []
+      filematches = result.split("\n\n")
+      filematches.each do |filematch|
+        binary = false
+        file = ''
+        matches = filematch.split("--\n")
+        matches.each_with_index do |match, i|
+          content = []
+          startline = 0
+          lines = match.split("\n")
+          if i == 0
+            text = lines.first
+            lines.slice!(0)
+            file = text[/^Binary file (.+) matches$/]
+            if file
+              binary = true
+            else
+              text.slice! /^#{branch}:/
+              file = text
+            end
+          end
+          lines.each_with_index do |line, j|
+            line.chomp!
+            number, text = line.split("\0", 2)
+            if j == 0
+              startline = number.to_i
+            end
+            content << text
+          end
+          greps << Grit::Grep.new(self, file, startline, content, binary)
+        end
+      end
+      greps
+    end
+
     def final_escape(str)
       str.gsub('"', '\\"')
     end
 
     # Accepts quoted strings and negation (-) operator in search strings
-    def grep(searchtext, contextlines = 3, branch = 'master')
+    def advanced_grep(searchtext, contextlines = 3, branch = 'master')
 
       # If there's not an even number of quote marks, get rid of them all
       if(searchtext.count('"') % 2 == 1)
