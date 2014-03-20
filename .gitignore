@@ -2,6 +2,7 @@ pkg
 .DS_Store
 repos/grit/
 *.gem
+.rakeTasks
 
 # IntelliJ IDEA
 *.iml
