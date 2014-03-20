@@ -2,3 +2,8 @@ pkg
 .DS_Store
 repos/grit/
 *.gem
+
+# IntelliJ IDEA
+*.iml
+.idea
+
